@@ -1,0 +1,518 @@
+substitutions:
+  device_name: "atomrs485"
+  device_normal_name: "Atom RS485"
+  device_friendly_name: "M5Stack ${device_normal_name} Gateway Airzone"
+
+esphome:
+  project:
+    name: "VTB.HA-ESPHome-Airzone-Aidoo"
+    version: "1.0.0"
+  name: ${device_name}
+  comment: ${device_friendly_name}
+  platform: ESP32
+  board: m5stack-core-esp32
+
+preferences:
+  flash_write_interval: 30days
+  
+# Habilitar y configurar WiFi.
+wifi:
+  ssid: <SSID_WiFi>
+  password: <PASSWORD_WiFi>
+  fast_connect: true
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: ${device_name}
+    password: <PASSWORD_AP>
+
+# Habilitar portal de configuración WiFi y funcionalidad OTA en caso de fallo.
+captive_portal:
+
+# Logging.
+logger:
+  baud_rate: 0     # Deshabilita el LOG por el UART.
+
+# Habilitar el API de Home Assistant.
+api:
+  #password: <PASSWORD>
+
+# Habilitar la funcionalidad OTA.
+ota:
+  #password: <PASSWORD>
+  
+# Habilitar Servidor WEB.
+web_server:
+  port: 80
+
+# Definición puerto serie y MODBUS.
+uart:
+  id: uart_1
+  baud_rate: 19200
+  tx_pin: GPIO19
+  rx_pin: GPIO22
+  data_bits: 8
+  parity: EVEN
+  stop_bits: 1
+  debug:
+    direction: BOTH
+    dummy_receiver: false
+    after:
+      delimiter: "\n"
+    sequence:
+      #- lambda: UARTDebug::log_string(direction, bytes);
+      - lambda: UARTDebug::log_hex(direction, bytes,' ');
+
+modbus:
+  id: modbus_uart
+  uart_id: uart_1
+
+modbus_controller:
+  - id: modbus_aidoo
+    ## the Modbus device addr
+    address: 0x1
+    modbus_id: modbus_uart
+    setup_priority: -10
+
+switch:
+  # Datos del Aire acondicionado.
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado
+    name: "Aire acondicionado"
+    register_type: holding
+    address: 0
+    bitmask: 1
+
+number:
+  # Datos del Aire acondicionado.
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_temperatura_consigna
+    name: "Aire acondicionado Temperatura consigna"
+    address: 1
+    value_type: U_WORD
+    unit_of_measurement: "ºC"
+    lambda: "return x;"
+    multiply: 10
+    min_value: 16         # Temperatura mínima del A/A.
+    max_value: 32         # Temperatura máxima del A/A.
+    step: 1
+
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_modo
+    name: "Aire acondicionado Modo"
+    address: 3
+    value_type: U_WORD
+    min_value: 1
+    max_value: 5
+    step: 1
+
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_velocidad
+    name: "Aire acondicionado Velocidad"
+    address: 4
+    value_type: U_WORD
+    min_value: 0
+    max_value: 100
+    step: 1
+
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_lamas_verticales
+    name: "Aire acondicionado Lamas verticales"
+    address: 5
+    value_type: U_WORD
+    min_value: 0
+    max_value: 9
+    step: 1
+
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_lamas_horizontales
+    name: "Aire acondicionado Lamas horizontales"
+    address: 6
+    value_type: U_WORD
+    min_value: 0
+    max_value: 9
+    step: 1
+
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_velocidad_numerica
+    name: "Aire acondicionado Velocidad numérica"
+    address: 54
+    value_type: U_WORD
+    min_value: 0
+    max_value: 4
+    step: 1
+
+sensor:
+  # Nivel RSSI de WiFi.
+  - platform: wifi_signal
+    name: "${device_normal_name} RSSI"
+    update_interval: 300s
+  
+  # Datos del Aire acondicionado.
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_temperatura_ambiente
+    name: "Aire acondicionado Temperatura ambiente"
+    register_type: holding
+    address: 2
+    value_type: U_WORD
+    device_class: "temperature"
+    unit_of_measurement: "ºC"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_error_1
+    name: "Aire acondicionado Error 1"
+    register_type: read
+    address: 7
+    value_type: U_WORD
+
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_error_2
+    name: "Aire acondicionado Error 2"
+    register_type: read
+    address: 8
+    value_type: U_WORD
+
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_modos_disponibles
+    name: "Aire acondicionado Modos disponibles"
+    register_type: read
+    address: 14
+    value_type: U_WORD
+
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_velocidades_disponibles
+    name: "Aire acondicionado Velocidades disponibles"
+    register_type: read
+    address: 15
+    value_type: U_WORD
+
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_lamas_disponibles
+    name: "Aire acondicionado Lamas disponibles"
+    register_type: read
+    address: 16
+    value_type: U_WORD
+
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_temperatura_maxima_frio
+    name: "Aire acondicionado Temperatura máxima frío"
+    register_type: read
+    address: 17
+    value_type: U_WORD
+    device_class: "temperature"
+    unit_of_measurement: "ºC"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_temperatura_minima_frio
+    name: "Aire acondicionado Temperatura mínima frío"
+    register_type: read
+    address: 18
+    value_type: U_WORD
+    device_class: "temperature"
+    unit_of_measurement: "ºC"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_temperatura_maxima_calor
+    name: "Aire acondicionado Temperatura máxima calor"
+    register_type: read
+    address: 19
+    value_type: U_WORD
+    device_class: "temperature"
+    unit_of_measurement: "ºC"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_temperatura_minima_calor
+    name: "Aire acondicionado Temperatura mínima calor"
+    register_type: read
+    address: 20
+    value_type: U_WORD
+    device_class: "temperature"
+    unit_of_measurement: "ºC"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_temperatura_maxima_auto
+    name: "Aire acondicionado Temperatura máxima auto"
+    register_type: read
+    address: 21
+    value_type: U_WORD
+    device_class: "temperature"
+    unit_of_measurement: "ºC"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_temperatura_minima_auto
+    name: "Aire acondicionado Temperatura mínima auto"
+    register_type: read
+    address: 22
+    value_type: U_WORD
+    device_class: "temperature"
+    unit_of_measurement: "ºC"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_temperatura_maxima_ventilador
+    name: "Aire acondicionado Temperatura máxima ventilador"
+    register_type: read
+    address: 23
+    value_type: U_WORD
+    device_class: "temperature"
+    unit_of_measurement: "ºC"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_temperatura_minima_ventilador
+    name: "Aire acondicionado Temperatura mínima ventilador"
+    register_type: read
+    address: 24
+    value_type: U_WORD
+    device_class: "temperature"
+    unit_of_measurement: "ºC"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_temperatura_maxima_deshumificador
+    name: "Aire acondicionado Temperatura máxima deshumificador"
+    register_type: read
+    address: 25
+    value_type: U_WORD
+    device_class: "temperature"
+    unit_of_measurement: "ºC"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_temperatura_minima_deshumificador
+    name: "Aire acondicionado Temperatura mínima deshumificador"
+    register_type: read
+    address: 26
+    value_type: U_WORD
+    device_class: "temperature"
+    unit_of_measurement: "ºC"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_temperatura_externa
+    name: "Aire acondicionado Temperatura externa"
+    register_type: read
+    address: 35
+    value_type: U_WORD
+    device_class: "temperature"
+    unit_of_measurement: "ºC"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_temperatura_retorno
+    name: "Aire acondicionado Temperatura retorno"
+    register_type: read
+    address: 36
+    value_type: U_WORD
+    device_class: "temperature"
+    unit_of_measurement: "ºC"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_temperatura_intercambiador_unidad_interior
+    name: "Aire acondicionado Temperatura intercambiador unidad interior"
+    register_type: read
+    address: 37
+    value_type: U_WORD
+    device_class: "temperature"
+    unit_of_measurement: "ºC"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_temperatura_tuberia_de_gas
+    name: "Aire acondicionado Temperatura tubería de gas"
+    register_type: read
+    address: 38
+    value_type: U_WORD
+    device_class: "temperature"
+    unit_of_measurement: "ºC"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_temperatura_intercambiador_unidad_exterior
+    name: "Aire acondicionado Temperatura intercambiador unidad exterior"
+    register_type: read
+    address: 39
+    value_type: U_WORD
+    device_class: "temperature"
+    unit_of_measurement: "ºC"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_temperatura_compresor_unidad_exterior
+    name: "Aire acondicionado Temperatura compresor unidad exterior"
+    register_type: read
+    address: 40
+    value_type: U_WORD
+    device_class: "temperature"
+    unit_of_measurement: "ºC"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_posicion_valvula_unidad_exterior
+    name: "Aire acondicionado Posición válvula unidad exterior"
+    register_type: read
+    address: 41
+    value_type: U_WORD
+
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_posicion_valvula_unidad_interior
+    name: "Aire acondicionado Posición válvula unidad interior"
+    register_type: read
+    address: 42
+    value_type: U_WORD
+
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_presion_evaporacion
+    name: "Aire acondicionado Presión evaporación"
+    register_type: read
+    address: 43
+    value_type: U_WORD
+    device_class: "pressure"
+    unit_of_measurement: "MPa"
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_presion_condensacion
+    name: "Aire acondicionado Presión condensación"
+    register_type: read
+    address: 44
+    value_type: U_WORD
+    device_class: "pressure"
+    unit_of_measurement: "MPa"
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.01
+
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_consumo
+    name: "Aire acondicionado Consumo"
+    register_type: read
+    address: 45
+    value_type: U_WORD
+    device_class: "current"
+    unit_of_measurement: "A"
+    accuracy_decimals: 0
+
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_temperatura_trabajo
+    name: "Aire acondicionado Temperatura trabajo"
+    register_type: read
+    address: 53
+    value_type: U_WORD
+    device_class: "temperature"
+    unit_of_measurement: "ºC"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_error
+    name: "Aire acondicionado Error"
+    register_type: read
+    address: 55
+    value_type: U_WORD
+
+  - platform: modbus_controller                           # Parámetro R/W, se queda en R por seguridad.
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_direccion_esclavo_modbus
+    name: "Aire acondicionado Dirección esclavo ModBus"
+    register_type: read
+    address: 56
+    value_type: U_WORD
+
+  - platform: modbus_controller                           # Parámetro R/W, se queda en R por seguridad.
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_velocidad_puerto_modbus
+    name: "Aire acondicionado Velocidad puerto ModBus"
+    register_type: read
+    address: 57
+    value_type: U_WORD
+
+  - platform: modbus_controller                           # Parámetro R/W, se queda en R por seguridad.
+    modbus_controller_id: modbus_aidoo
+    id: aire_acondicionado_pardidad_puerto_modbus
+    name: "Aire acondicionado Paridad puerto ModBus"
+    register_type: read
+    address: 58
+    value_type: U_WORD
+
+#-EOF-
