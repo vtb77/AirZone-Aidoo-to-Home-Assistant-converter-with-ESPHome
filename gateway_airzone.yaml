@@ -12,6 +12,7 @@ esphome:
   platform: ESP32
   board: m5stack-core-esp32
 
+# Guardar los estados en memoria cada 30 días, a fin de evitar que se estropee la memoría.
 preferences:
   flash_write_interval: 30days
   
