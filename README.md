@@ -1,2 +1,2 @@
-# HomeAssistant_ESPHome_Airzone_Aidoo
+# HomeAssistant ESPHome Airzone Aidoo
 Gateway Airzone Aidoo para Home Assistant con ESPHome.
