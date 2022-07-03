@@ -1,5 +1,5 @@
 # Adaptador AirZone Aidoo a Home Assistant con ESPHome 
-Gateway AirZone Aidoo a Home Assistant utilizando ESPHome.
+_Gateway AirZone Aidoo a Home Assistant utilizando ESPHome._
 
 Este proyecto nace ante la necesidad de poder controlar localmente desde Home Assistant un equipo doméstico de aire acondicionado de la marca Daikin con más de 10 años.
 
