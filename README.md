@@ -12,3 +12,6 @@ Para poder controlar localmente el antiguo equipo de aire acondicionado Daikin d
 * AirZone Aidoo
 * Adaptador señales RS485-TTL
 * ESP32
+
+
+_PENDIENTE DE TERMINAR_
